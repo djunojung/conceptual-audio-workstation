@@ -8,7 +8,7 @@
 </head>
 <body>
   <h1>Conceptual Audio Workstation</h1>
-  
+
   <!-- Metaphor Generation -->
   <div class="inputs">
     <input type="text" id="object1" placeholder="Enter first concept (e.g., Vine)">
@@ -61,12 +61,6 @@
     <button onclick="clearDecomps()" style="margin-top: 1rem;">❌ Clear All</button>
   </div>
 
-  <!-- Export Buttons -->
-<div style="margin-top: 2rem;">
-  <button onclick="exportMetaphors()">📤 Export Metaphor Kit</button>
-  <button onclick="exportDecompositions()">📤 Export Decomposition Kit</button>
-</div>
-
   <!-- Combine Decompositions -->
   <div style="margin-top: 2rem;">
     <button onclick="combineSelectedDecomps()">🔀 Combine Selected & Generate Metaphor</button>
@@ -81,18 +75,17 @@
     </div>
   </div>
 
+  <!-- Canvas for Modules -->
   <div id="canvas">
-  <div class="module" draggable="true" style="left: 100px; top: 100px;">
-    <h4>🎛 Concept</h4>
-    <input type="text" placeholder="Enter concept" />
-    <button onclick="decomposeConcept()">Decompose</button>
+    <!-- Example draggable module -->
+    <div class="module" style="top: 50px; left: 50px;">
+      <div class="port input"></div>
+      <div class="port output"></div>
+      <p>Metaphor Module</p>
+    </div>
   </div>
 
-  <div class="module" draggable="true" style="left: 400px; top: 100px;">
-    <h4>🎚 Mixer</h4>
-    <input type="range" />
-  </div>
-</div>
+  <div id="wireLayer"></div>
 
   <script src="main.js"></script>
 </body>

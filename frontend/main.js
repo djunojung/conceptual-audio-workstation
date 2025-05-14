@@ -51,7 +51,7 @@ async function decomposeConcept() {
   }
 }
 
-// Visual Renderer for Decomposition Output
+// Render Decomposition Output
 function renderDecomposition(data) {
   const resultBox = document.getElementById("decompositionResult");
   const d = JSON.parse(data.decomposition);
@@ -215,7 +215,7 @@ function clearDecomps() {
   renderDecompKit();
 }
 
-// Combine Decompositions with Blend Slider
+// Combine Two Decompositions
 async function combineSelectedDecomps() {
   const checkboxes = document.querySelectorAll('.decompCheck:checked');
   const selectedIndexes = Array.from(checkboxes).map(cb => parseInt(cb.value));
@@ -230,7 +230,6 @@ async function combineSelectedDecomps() {
   if (!first || !second) return;
 
   const blend = parseInt(document.getElementById("blendSlider").value);
-
   document.getElementById("hybridMetaphor").textContent = "Synthesizing metaphor...";
 
   try {
@@ -253,69 +252,46 @@ async function combineSelectedDecomps() {
   }
 }
 
-// Update blend % label
+// Update blend slider label
 function updateBlendLabel() {
   const val = document.getElementById("blendSlider").value;
   document.getElementById("blendValue").textContent = val;
 }
 
-function exportMetaphors() {
-  const data = localStorage.getItem("conceptKit") || "[]";
-  download("metaphors.caw.json", data);
-}
-
-function exportDecompositions() {
-  const data = localStorage.getItem("decompKit") || "[]";
-  download("decompositions.caw.json", data);
-}
-
-function download(filename, text) {
-  const blob = new Blob([text], { type: "application/json" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-}
-
-function enableDragging() {
+// Enable draggable modules
+function makeModulesDraggable() {
   const modules = document.querySelectorAll('.module');
-  
+
   modules.forEach(module => {
-    module.onmousedown = function (e) {
-      e.preventDefault();
-      let offsetX = e.clientX - module.offsetLeft;
-      let offsetY = e.clientY - module.offsetTop;
+    let offsetX = 0;
+    let offsetY = 0;
+    let isDragging = false;
 
-      function onMouseMove(e) {
-        module.style.left = `${e.clientX - offsetX}px`;
-        module.style.top = `${e.clientY - offsetY}px`;
-      }
+    module.addEventListener('mousedown', (e) => {
+      if (e.target.classList.contains('port')) return;
+      isDragging = true;
+      offsetX = e.clientX - module.getBoundingClientRect().left;
+      offsetY = e.clientY - module.getBoundingClientRect().top;
+      module.style.zIndex = 10;
+    });
 
-      function onMouseUp() {
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
-      }
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      module.style.left = (e.clientX - offsetX) + 'px';
+      module.style.top = (e.clientY - offsetY) + 'px';
+    });
 
-      document.addEventListener('mousemove', onMouseMove);
-      document.addEventListener('mouseup', onMouseUp);
-    };
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+      module.style.zIndex = 1;
+    });
   });
 }
 
-function snapToGrid(x, y, size = 20) {
-  return [Math.round(x / size) * size, Math.round(y / size) * size];
-}
-
-// Replace line in onMouseMove:
-let [snapX, snapY] = snapToGrid(e.clientX - offsetX, e.clientY - offsetY);
-module.style.left = `${snapX}px`;
-module.style.top = `${snapY}px`;
-
-
-// Load on page load
+// Initialize all systems on page load
 window.onload = () => {
   renderKit();
   renderDecompKit();
   updateBlendLabel();
-  enableDragging(); // ✅ Make modules draggable
+  makeModulesDraggable();
 };

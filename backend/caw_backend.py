@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 # Load environment variables from .env
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
-print(f"Loaded OpenAI key: {openai.api_key[:5]}...")  # Print only first few characters for safety
+print(f"Loaded OpenAI key: {openai.api_key[:5]}...")  # Optional debug check
 
 app = Flask(__name__)
 CORS(app)
@@ -35,14 +35,17 @@ def generate_metaphor():
     Output a metaphorical title (one line) followed by a 2–3 sentence explanation.
     """
 
-    response = openai.ChatCompletion.create(
-        model="gpt-4",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.7
-    )
-
-    message = response.choices[0].message.content.strip()
-    return jsonify({"metaphor": message})
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7
+        )
+        message = response.choices[0].message.content.strip()
+        return jsonify({"metaphor": message})
+    except Exception as e:
+        print("OpenAI API error:", str(e))
+        return jsonify({"error": str(e)}), 500
 
 # Route 2: Concept Decomposer
 @app.route("/decompose_concept", methods=["POST"])
@@ -76,16 +79,19 @@ Format as JSON:
 }}
     """
 
-    response = openai.ChatCompletion.create(
-        model="gpt-4",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.6
-    )
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.6
+        )
+        message = response.choices[0].message.content.strip()
+        return jsonify({"decomposition": message})
+    except Exception as e:
+        print("OpenAI API error:", str(e))
+        return jsonify({"error": str(e)}), 500
 
-    message = response.choices[0].message.content.strip()
-    return jsonify({"decomposition": message})
-
-# Route 3: Remix From One or Two Decompositions (with blend slider)
+# Route 3: Remix From One or Two Decompositions
 @app.route("/remix_from_decomposition", methods=["POST"])
 def remix_from_combined():
     data = request.json
@@ -95,7 +101,6 @@ def remix_from_combined():
     blend = data.get("blend", 50)
 
     if first and second:
-        # Combining two decompositions
         prompt = f"""
 You are a metaphor composer. Blend two conceptual decompositions into a single hybrid and generate a metaphor.
 
@@ -113,7 +118,6 @@ Instructions:
 - Generate a metaphorical title (1 line) and a poetic 2–3 sentence explanation reflecting the synthesis.
 """
     else:
-        # Single decomposition remix
         prompt = f"""
 You are a metaphor composer. Use the conceptual decomposition of the object "{name}" to create a metaphor.
 
@@ -127,14 +131,17 @@ Consider:
 Generate a metaphorical title (1 line), followed by a poetic 2–3 sentence explanation inspired by the *essence* of the concept.
         """
 
-    response = openai.ChatCompletion.create(
-        model="gpt-4",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.8
-    )
-
-    message = response.choices[0].message.content.strip()
-    return jsonify({"metaphor": message})
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.8
+        )
+        message = response.choices[0].message.content.strip()
+        return jsonify({"metaphor": message})
+    except Exception as e:
+        print("OpenAI API error:", str(e))
+        return jsonify({"error": str(e)}), 500
 
 # Run the server
 if __name__ == "__main__":

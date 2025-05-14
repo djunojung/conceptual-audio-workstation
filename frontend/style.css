@@ -132,6 +132,7 @@ button:hover {
   margin: 0.25rem 0;
 }
 
+/* Saved Kits */
 .kit {
   margin-top: 2rem;
   background-color: #0f0f0f;
@@ -140,33 +141,13 @@ button:hover {
   text-align: left;
 }
 
-#metaphorList {
-  list-style-type: none;
-  padding-left: 0;
-}
-
-#metaphorList li {
-  margin: 0.5rem 0;
-  padding: 0.5rem;
-  background: #222;
-  border-radius: 5px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.saved-metaphor {
-  flex: 1;
-  font-size: 0.9rem;
-  color: #ccc;
-  padding-right: 0.5rem;
-  white-space: pre-wrap;
-}
+#metaphorList,
 #decompList {
   list-style-type: none;
   padding-left: 0;
 }
 
+#metaphorList li,
 #decompList li {
   margin: 0.5rem 0;
   padding: 0.5rem;
@@ -177,6 +158,16 @@ button:hover {
   align-items: center;
   color: #ddd;
 }
+
+.saved-metaphor {
+  flex: 1;
+  font-size: 0.9rem;
+  color: #ccc;
+  padding-right: 0.5rem;
+  white-space: pre-wrap;
+}
+
+/* Canvas for Modules */
 #canvas {
   position: relative;
   width: 100%;
@@ -185,8 +176,10 @@ button:hover {
   border: 2px solid #333;
   margin-top: 2rem;
   overflow: hidden;
+  border-radius: 8px;
 }
 
+/* Draggable Module */
 .module {
   position: absolute;
   width: 200px;
@@ -197,22 +190,10 @@ button:hover {
   color: white;
   cursor: move;
   user-select: none;
-}
-#wireLayer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 0;
+  z-index: 1;
 }
 
-.wire {
-  stroke: #00ffff;
-  stroke-width: 2px;
-  fill: none;
-}
+/* Ports for Wiring */
 .port {
   width: 12px;
   height: 12px;
@@ -234,24 +215,30 @@ button:hover {
   transform: translateY(-50%);
 }
 
-#canvas {
-  position: relative;
+/* Wire Overlay (future use) */
+#wireLayer {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
-  height: 600px;
-  background: #111;
-  border: 2px solid #333;
-  margin-top: 2rem;
-  overflow: hidden;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
 }
 
-.module {
-  position: absolute;
-  width: 200px;
-  background: #222;
-  border: 1px solid #444;
-  padding: 1rem;
-  border-radius: 8px;
-  color: white;
-  cursor: move;
-  user-select: none;
+.wire {
+  stroke: #00ffff;
+  stroke-width: 2px;
+  fill: none;
+}
+
+/* Focus states for accessibility */
+input:focus, button:focus {
+  outline: 2px solid #0ff;
+  outline-offset: 2px;
+}
+
+/* Transition for smoother UI feel */
+.tag, button {
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
