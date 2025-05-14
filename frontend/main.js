@@ -259,9 +259,63 @@ function updateBlendLabel() {
   document.getElementById("blendValue").textContent = val;
 }
 
+function exportMetaphors() {
+  const data = localStorage.getItem("conceptKit") || "[]";
+  download("metaphors.caw.json", data);
+}
+
+function exportDecompositions() {
+  const data = localStorage.getItem("decompKit") || "[]";
+  download("decompositions.caw.json", data);
+}
+
+function download(filename, text) {
+  const blob = new Blob([text], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+function enableDragging() {
+  const modules = document.querySelectorAll('.module');
+  
+  modules.forEach(module => {
+    module.onmousedown = function (e) {
+      e.preventDefault();
+      let offsetX = e.clientX - module.offsetLeft;
+      let offsetY = e.clientY - module.offsetTop;
+
+      function onMouseMove(e) {
+        module.style.left = `${e.clientX - offsetX}px`;
+        module.style.top = `${e.clientY - offsetY}px`;
+      }
+
+      function onMouseUp() {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+      }
+
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    };
+  });
+}
+
+function snapToGrid(x, y, size = 20) {
+  return [Math.round(x / size) * size, Math.round(y / size) * size];
+}
+
+// Replace line in onMouseMove:
+let [snapX, snapY] = snapToGrid(e.clientX - offsetX, e.clientY - offsetY);
+module.style.left = `${snapX}px`;
+module.style.top = `${snapY}px`;
+
+
 // Load on page load
 window.onload = () => {
   renderKit();
   renderDecompKit();
   updateBlendLabel();
+  enableDragging(); // ✅ Make modules draggable
 };

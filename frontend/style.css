@@ -233,3 +233,25 @@ button:hover {
   top: 50%;
   transform: translateY(-50%);
 }
+
+#canvas {
+  position: relative;
+  width: 100%;
+  height: 600px;
+  background: #111;
+  border: 2px solid #333;
+  margin-top: 2rem;
+  overflow: hidden;
+}
+
+.module {
+  position: absolute;
+  width: 200px;
+  background: #222;
+  border: 1px solid #444;
+  padding: 1rem;
+  border-radius: 8px;
+  color: white;
+  cursor: move;
+  user-select: none;
+}

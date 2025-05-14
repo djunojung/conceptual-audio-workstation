@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 # Load environment variables from .env
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
+print(f"Loaded OpenAI key: {openai.api_key[:5]}...")  # Print only first few characters for safety
 
 app = Flask(__name__)
 CORS(app)
