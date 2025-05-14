@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Conceptual Audio Workstation</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Conceptual Audio Workstation</h1>
+  
+  <!-- Metaphor Generation -->
+  <div class="inputs">
+    <input type="text" id="object1" placeholder="Enter first concept (e.g., Vine)">
+    <input type="text" id="object2" placeholder="Enter second concept (e.g., Pen)">
+    <button onclick="generateMetaphor()">Generate</button>
+  </div>
+
+  <div class="sliders">
+    <label>Organic ↔ Synthetic: <input type="range" id="slider1" min="0" max="100" value="50" /></label><br>
+    <label>Static ↔ Dynamic: <input type="range" id="slider2" min="0" max="100" value="50" /></label><br>
+    <label>Poetic ↔ Literal: <input type="range" id="slider3" min="0" max="100" value="50" /></label><br>
+    <label>Concrete ↔ Abstract: <input type="range" id="slider4" min="0" max="100" value="50" /></label>
+  </div>
+
+  <div id="output">
+    <h3>Metaphorical Blend:</h3>
+    <p id="metaphorText">Awaiting input...</p>
+  </div>
+
+  <div id="saveSection">
+    <button onclick="saveMetaphor()">💾 Save to Concept Kit</button>
+  </div>
+
+  <div id="conceptKit" class="kit">
+    <h3>🧳 Concept Kit: Saved Metaphors</h3>
+    <ul id="metaphorList"></ul>
+    <button onclick="clearKit()" style="margin-top: 1rem;">❌ Clear All</button>
+  </div>
+
+  <!-- Decompose Concept -->
+  <div class="decomposer">
+    <h3>Decompose Concept</h3>
+    <input type="text" id="decomposeInput" placeholder="Enter a single concept">
+    <button onclick="decomposeConcept()">Decompose</button>
+    <div id="decompositionResult" class="decompose-output">Awaiting input...</div>
+
+    <button onclick="remixFromDecomposition()">Remix from this decomposition</button>
+    <div id="remixResult" style="margin-top: 1rem; font-style: italic; color: #ccc;"></div>
+  </div>
+
+  <!-- Save Decomposition -->
+  <div id="decompSaveSection">
+    <button onclick="saveDecomposition()">💾 Save Decomposition</button>
+  </div>
+
+  <!-- Saved Decompositions -->
+  <div id="decompKit" class="kit">
+    <h3>📂 Concept Kit: Saved Decompositions</h3>
+    <ul id="decompList"></ul>
+    <button onclick="clearDecomps()" style="margin-top: 1rem;">❌ Clear All</button>
+  </div>
+
+  <!-- Combine Decompositions -->
+  <div style="margin-top: 2rem;">
+    <button onclick="combineSelectedDecomps()">🔀 Combine Selected & Generate Metaphor</button>
+    
+    <div style="margin: 1rem 0;">
+      <label>Blend Balance: <span id="blendValue">50</span>% Concept 1</label><br>
+      <input type="range" id="blendSlider" min="0" max="100" value="50" oninput="updateBlendLabel()" />
+    </div>
+
+    <div id="hybridMetaphor" style="margin-top: 1rem; font-style: italic; color: #ccc;">
+      Awaiting input...
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>
