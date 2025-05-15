@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import openai
 import os
+import json
 from dotenv import load_dotenv
 
 # Load environment variables from .env
@@ -91,77 +92,98 @@ Format as JSON:
         print("OpenAI API error:", str(e))
         return jsonify({"error": str(e)}), 500
 
-# Route 3: Remix From One or Two Decompositions
+def is_selector_decomposition(d):
+    return d.get("archetype") == "User-Injected" and d.get("frames", {}).get("nature") == "Injected"
+
 @app.route("/remix_from_decomposition", methods=["POST"])
 def remix_from_combined():
+    print("🎯 remix_from_combined() called")
     data = request.json
     name = data.get("concept", "Hybrid Concept")
     first = data.get("first", None)
     second = data.get("second", None)
     blend = data.get("blend", 50)
 
+    # Check if inputs are from a Selector module
+    first_is_selector = is_selector_decomposition(first) if first else False
+    second_is_selector = is_selector_decomposition(second) if second else False
+
     if first and second:
         prompt = f"""
-You are a metaphor composer. Blend two conceptual decompositions into a single hybrid and generate a metaphor.
+You are a metaphor composer. The user has selected symbolic primitives to guide a synthesis of two conceptual decompositions.
 
 Concept: {name}
 Blend weight: {blend}% from concept 1, {100 - blend}% from concept 2
 
-The following conceptual structures were *selectively chosen by the user* to guide the synthesis:
-
-Decomposition 1 (selected primitives from concept 1):
+Decomposition 1 {"(user-selected primitives)" if first_is_selector else ""}:
 {json.dumps(first, indent=2)}
 
-Decomposition 2 (selected primitives from concept 2):
+Decomposition 2 {"(user-selected primitives)" if second_is_selector else ""}:
 {json.dumps(second, indent=2)}
 
-Use these as *intentional constraints* to shape the metaphor’s structure and symbolism.
-
-
 Instructions:
-- Identify complementary or resonant image schemas, functions, archetypes, and emotions.
-- Generate a metaphorical title (1 line) and a poetic 2–3 sentence explanation reflecting the synthesis.
+- You MUST use the symbolic primitives as compositional constraints.
+- Generate a metaphorical title and a poetic 2–3 sentence description that integrates the symbolic ideas.
+- For each primitive in the decompositions, explain how it directly influenced the metaphor.
 
-Then, map the most salient symbolic primitives from each concept to specific phrases or meanings in the metaphor. Use labeled bullets like:
-
-- Concept 1 – PATH: "...phrase..."  
-- Concept 2 – BIND: "...phrase..."  
+Respond in JSON format like this:
+{{
+  "title": "Threads of Return",
+  "description": "A metaphor of time as a spiral thread, folding the past into the future...",
+  "mapping": {{
+    "Concept 1 – PATH": "The metaphor describes a looping journey",
+    "Concept 2 – CONTAINER": "Used in the image of memory as a vessel"
+  }}
+}}
 """
     else:
         prompt = f"""
-You are a metaphor composer. The user has selected the following symbolic primitives to guide the synthesis for "{name}".
+You are a metaphor composer. The user has intentionally selected symbolic primitives to guide the synthesis for the concept "{name}".
 
-Use them as compositional constraints — emphasize their logic in your metaphor:
-
+Decomposition ({'user-selected primitives' if first_is_selector else 'system-generated'}):
 {json.dumps(first, indent=2)}
 
+Instructions:
+- Use the symbolic primitives as hard compositional rules.
+- Generate a metaphorical title and poetic 2–3 sentence explanation.
+- For each symbolic primitive, explain how it directly influenced the metaphor.
 
-Consider:
-- Image schemas
-- Functional primitives
-- Archetype
-- Emotion
-- Relational metaphors
+Respond in JSON format like this:
+{{
+  "title": "The Winding Stair",
+  "description": "A metaphor for growth as a spiraling path inward...",
+  "mapping": {{
+    "PATH": "Appears in the spiral structure of movement inward",
+    "REFLECT": "Used in the idea of the self gazing inward"
+  }}
+}}
+"""
 
-Generate a metaphorical title (1 line). Then write a poetic 2–3 sentence explanation.
-
-Then, explicitly map each selected symbolic primitive (schemas, functions, or relations) to the part of the metaphor it influences. Use bullet points like:
-
-- PATH: "...phrase from metaphor..."  
-- REFLECT: "...explanation..."  
-        """
 
     try:
+        print(prompt)
         response = openai.ChatCompletion.create(
             model="gpt-4",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.8
         )
         message = response.choices[0].message.content.strip()
+
+try:
+    parsed = json.loads(message)
+except json.JSONDecodeError:
+    parsed = {
+        "title": "⚠️ Error parsing GPT response",
+        "description": message,
+        "mapping": {}
+    }
+
+return jsonify(parsed)
         return jsonify({"metaphor": message})
     except Exception as e:
         print("OpenAI API error:", str(e))
         return jsonify({"error": str(e)}), 500
+
 
 # Run the server
 if __name__ == "__main__":
