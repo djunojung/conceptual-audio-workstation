@@ -259,33 +259,64 @@ function updateBlendLabel() {
 }
 
 // Enable draggable modules
+function makeDraggable(module) {
+  let offsetX = 0;
+  let offsetY = 0;
+  let isDragging = false;
+
+  module.addEventListener('mousedown', (e) => {
+    if (e.target.classList.contains('port')) return;
+    isDragging = true;
+    offsetX = e.clientX - module.getBoundingClientRect().left;
+    offsetY = e.clientY - module.getBoundingClientRect().top;
+    module.style.zIndex = 10;
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    module.style.left = (e.clientX - offsetX) + 'px';
+    module.style.top = (e.clientY - offsetY) + 'px';
+  });
+
+  document.addEventListener('mouseup', () => {
+  isDragging = false;
+  module.style.zIndex = 1;
+  saveRack(); // 👈 save layout when done dragging
+});
+
+}
+
 function makeModulesDraggable() {
   const modules = document.querySelectorAll('.module');
+  modules.forEach(makeDraggable);
+}
 
-  modules.forEach(module => {
-    let offsetX = 0;
-    let offsetY = 0;
-    let isDragging = false;
+let moduleCount = 1;
 
-    module.addEventListener('mousedown', (e) => {
-      if (e.target.classList.contains('port')) return;
-      isDragging = true;
-      offsetX = e.clientX - module.getBoundingClientRect().left;
-      offsetY = e.clientY - module.getBoundingClientRect().top;
-      module.style.zIndex = 10;
-    });
+function addNewModule(label = null, top = null, left = null) {
+  const canvas = document.getElementById("canvas");
+  const module = document.createElement("div");
+  module.className = "module";
 
-    document.addEventListener('mousemove', (e) => {
-      if (!isDragging) return;
-      module.style.left = (e.clientX - offsetX) + 'px';
-      module.style.top = (e.clientY - offsetY) + 'px';
-    });
+  const id = moduleCount++;
+  const moduleLabel = label || `Module ${id}`;
+  const posTop = top || `${50 + id * 20}px`;
+  const posLeft = left || `${50 + id * 20}px`;
 
-    document.addEventListener('mouseup', () => {
-      isDragging = false;
-      module.style.zIndex = 1;
-    });
-  });
+  module.style.top = posTop;
+  module.style.left = posLeft;
+  module.setAttribute("data-id", id);
+
+  module.innerHTML = `
+    <div class="port input"></div>
+    <div class="port output"></div>
+    <p>${moduleLabel}</p>
+  `;
+
+  canvas.appendChild(module);
+  makeDraggable(module);
+
+  saveRack(); // 👈 save layout on every module creation
 }
 
 // Initialize all systems on page load
@@ -293,5 +324,35 @@ window.onload = () => {
   renderKit();
   renderDecompKit();
   updateBlendLabel();
-  makeModulesDraggable();
+  makeModulesDraggable(); // initial ones
+  loadRack(); // 🔁 load saved modules
 };
+
+
+function saveRack() {
+  const modules = document.querySelectorAll('.module');
+  const layout = [];
+
+  modules.forEach(module => {
+    layout.push({
+      id: module.getAttribute("data-id"),
+      label: module.querySelector("p").textContent,
+      top: module.style.top,
+      left: module.style.left
+    });
+  });
+
+  localStorage.setItem("cawRack", JSON.stringify(layout));
+}
+
+function loadRack() {
+  const raw = localStorage.getItem("cawRack");
+  if (!raw) return;
+
+  const modules = JSON.parse(raw);
+  modules.forEach(mod => {
+    addNewModule(mod.label, mod.top, mod.left);
+  });
+}
+
+console.log("JS Loaded");
