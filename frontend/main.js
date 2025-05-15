@@ -355,4 +355,40 @@ function loadRack() {
   });
 }
 
+function exportRack() {
+  const raw = localStorage.getItem("cawRack");
+  if (!raw) {
+    alert("No rack data to export.");
+    return;
+  }
+
+  const blob = new Blob([raw], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "conceptual-audio-workstation.cawrack.json";
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+
+function importRack(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      localStorage.setItem("cawRack", JSON.stringify(parsed));
+      location.reload(); // Rebuild from scratch
+    } catch (err) {
+      alert("Invalid .cawrack.json file.");
+      console.error(err);
+    }
+  };
+  reader.readAsText(file);
+}
+
 console.log("JS Loaded");
