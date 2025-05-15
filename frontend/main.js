@@ -333,7 +333,8 @@ function addNewModule(label = null, top = null, left = null, type = null) {
   "3": "Generator",
   "4": "Mixer",
   "5": "Viewer",
-  "6": "Exporter"
+  "6": "Exporter",
+  "7": "Selector"
 };
 
 let moduleType = type;
@@ -386,7 +387,8 @@ function getTypeIcon(type) {
     "Generator": "🧠",
     "Mixer": "🎚️",
     "Viewer": "👁️",
-    "Exporter": "💾"
+    "Exporter": "💾",
+    "Selector": "🧠"
   };
   return icons[type] || "❓";
 }
@@ -411,6 +413,25 @@ function getModuleUI(type) {
       return `<div class="viewer-box">No data yet</div>`;
     case "Exporter":
       return `<button onclick="triggerThis(this)">Export</button>`;
+    case "Selector":
+  return `
+    <div style="font-size: 0.8rem; margin-bottom: 0.5rem;">Select primitives to inject:</div>
+    <strong>Image Schemas</strong><br>
+    <div class="tag-container" data-cat="image_schemas">
+      ${["PATH", "CONTAINER", "BALANCE", "SOURCE-PATH-GOAL"].map(p => `<span class="tag selectable" data-key="selector-image_schemas-${p}" data-cat="image_schemas" data-id="selector">${p}</span>`).join('')}
+    </div>
+
+    <strong>Functions</strong><br>
+    <div class="tag-container" data-cat="functional_primitives">
+      ${["Reflect", "Bind", "Cut", "Perceive", "Contain"].map(f => `<span class="tag selectable" data-key="selector-functional_primitives-${f}" data-cat="functional_primitives" data-id="selector">${f}</span>`).join('')}
+    </div>
+
+    <strong>Relations</strong><br>
+    <div class="tag-container" data-cat="relations">
+      ${["X is a mirror of Y", "X contains Y", "X transforms Y"].map(r => `<span class="tag selectable" data-key="selector-relations-${r}" data-cat="relations" data-id="selector">${r}</span>`).join('')}
+    </div>
+    <button onclick="triggerThis(this)">Inject</button>
+  `;
     default:
       return `<div>Unknown module</div>`;
   }
@@ -814,6 +835,33 @@ div.textContent = `🧠 Selected Primitives Used:\n${selectedStrings}\n\n💡 ${
       break;
     }
 
+    case "Selector": {
+  const modId = moduleId;
+  const selected = selectedPrimitives[modId];
+  if (!selected || Object.values(selected).every(arr => arr.length === 0)) {
+    alert("No primitives selected.");
+    return;
+  }
+
+  const output = {
+    image_schemas: selected.image_schemas || [],
+    functional_primitives: selected.functional_primitives || [],
+    relations: selected.relations || [],
+    archetype: "User-Injected",
+    emotion: "Neutral",
+    frames: {
+      nature: "Injected",
+      technology: "Injected",
+      myth: "Injected",
+      design: "Injected"
+    }
+  };
+
+  moduleOutputs[moduleId] = output;
+  triggerNextModules(moduleId);
+  break;
+}
+
     default:
       console.log(`Unhandled module type: ${type}`);
   }
@@ -952,4 +1000,3 @@ function getFilteredOrFull(moduleId) {
 
 
 console.log("JS Loaded"); 
-console.log("Generator inputs:", decompositions);
