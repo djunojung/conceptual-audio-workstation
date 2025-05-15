@@ -414,11 +414,26 @@ window.onload = () => {
   renderKit();
   renderDecompKit();
   updateBlendLabel();
-  makeModulesDraggable(); // initial ones
-  loadRack(); // 🔁 load saved modules
-  setupWiring();
-};
+  makeModulesDraggable();
+  loadRack(); // If a saved layout exists, it will overwrite default below
 
+  if (!localStorage.getItem("cawRack")) {
+    createDefaultModules();
+  }
+
+  setupWiring(); // Enable wire drawing
+};
+function createDefaultModules() {
+  const spacing = 240;
+  const top = 100;
+
+  const input = addNewModule("Enter Concept", `${top}px`, `${spacing * 0}px`, "Input");
+  const decomp = addNewModule("Decomposer", `${top}px`, `${spacing * 1}px`, "Decomposer");
+  const gen = addNewModule("Generator", `${top}px`, `${spacing * 2}px`, "Generator");
+  const viewer = addNewModule("Viewer", `${top}px`, `${spacing * 3}px`, "Viewer");
+
+  // Optional: wire them automatically in the future
+}
 
 function saveRack() {
   const modules = document.querySelectorAll('.module');
@@ -770,4 +785,4 @@ document.addEventListener("contextmenu", function (e) {
   }
 });
 
-console.log("JS Loaded");
+console.log("JS Loaded"); 

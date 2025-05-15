@@ -293,3 +293,11 @@ input:focus, button:focus {
   stroke-width: 2px;
   fill: none;
 }
+
+.decomp-output {
+  background: #111;
+  border: 1px solid #333;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-top: 0.5rem;
+}
