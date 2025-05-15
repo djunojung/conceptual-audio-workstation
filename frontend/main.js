@@ -739,7 +739,21 @@ function handleGeneratorResponse(data) {
   const div = document.createElement("div");
   div.className = "generator-output";
   div.style = "margin-top:0.5rem; font-style:italic;";
-  div.textContent = data.metaphor;
+  const inputIds = getAllInputsTo(moduleId);
+const selectedStrings = inputIds.map(id => {
+  const selected = selectedPrimitives[id];
+  if (!selected) return "";
+
+  const formatted = [
+    `🔹 Image Schemas: ${selected.image_schemas?.join(', ') || "—"}`,
+    `🔹 Functional Primitives: ${selected.functional_primitives?.join(', ') || "—"}`,
+    `🔹 Relations: ${selected.relations?.join(', ') || "—"}`
+  ];
+  return formatted.join("\n");
+}).join("\n\n");
+
+div.textContent = `🧠 Selected Primitives Used:\n${selectedStrings}\n\n💡 ${data.metaphor}`;
+
 
   const body = document.querySelector(`.module[data-id="${moduleId}"] .module-body`);
   const existing = body.querySelector(".generator-output");

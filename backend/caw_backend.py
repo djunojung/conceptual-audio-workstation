@@ -107,19 +107,34 @@ You are a metaphor composer. Blend two conceptual decompositions into a single h
 Concept: {name}
 Blend weight: {blend}% from concept 1, {100 - blend}% from concept 2
 
-Decomposition 1:
-{first}
+The following conceptual structures were *selectively chosen by the user* to guide the synthesis:
 
-Decomposition 2:
-{second}
+Decomposition 1 (selected primitives from concept 1):
+{json.dumps(first, indent=2)}
+
+Decomposition 2 (selected primitives from concept 2):
+{json.dumps(second, indent=2)}
+
+Use these as *intentional constraints* to shape the metaphor’s structure and symbolism.
+
 
 Instructions:
 - Identify complementary or resonant image schemas, functions, archetypes, and emotions.
 - Generate a metaphorical title (1 line) and a poetic 2–3 sentence explanation reflecting the synthesis.
+
+Then, map the most salient symbolic primitives from each concept to specific phrases or meanings in the metaphor. Use labeled bullets like:
+
+- Concept 1 – PATH: "...phrase..."  
+- Concept 2 – BIND: "...phrase..."  
 """
     else:
         prompt = f"""
-You are a metaphor composer. Use the conceptual decomposition of the object "{name}" to create a metaphor.
+You are a metaphor composer. The user has selected the following symbolic primitives to guide the synthesis for "{name}".
+
+Use them as compositional constraints — emphasize their logic in your metaphor:
+
+{json.dumps(first, indent=2)}
+
 
 Consider:
 - Image schemas
@@ -128,7 +143,12 @@ Consider:
 - Emotion
 - Relational metaphors
 
-Generate a metaphorical title (1 line), followed by a poetic 2–3 sentence explanation inspired by the *essence* of the concept.
+Generate a metaphorical title (1 line). Then write a poetic 2–3 sentence explanation.
+
+Then, explicitly map each selected symbolic primitive (schemas, functions, or relations) to the part of the metaphor it influences. Use bullet points like:
+
+- PATH: "...phrase from metaphor..."  
+- REFLECT: "...explanation..."  
         """
 
     try:
