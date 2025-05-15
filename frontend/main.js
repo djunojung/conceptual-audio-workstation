@@ -589,6 +589,12 @@ function getConnectionFrom(toId) {
   return conn ? conn.from : null;
 }
 
+function getAllInputsTo(moduleId) {
+  return connections
+    .filter(c => c.to === moduleId)
+    .map(c => c.from);
+}
+
 function triggerModule(moduleId) {
   const module = document.querySelector(`.module[data-id="${moduleId}"]`);
   if (!module) return;
@@ -652,10 +658,98 @@ function triggerModule(moduleId) {
     }
 
     case "Generator": {
-  const inputId = getConnectionFrom(moduleId);
-  const selected = selectedPrimitives[inputId];
+  const inputIds = getAllInputsTo(moduleId);
+if (inputIds.length === 0) return alert(`${label} needs decomposed input.`);
 
-  const genInput = selected || getInputFromConnected(moduleId);
+// Check that all input modules have outputs
+const decompositions = inputIds.map(id => moduleOutputs[id]);
+if (decompositions.some(d => !d)) {
+  alert(`${label} is waiting on decomposition modules to finish.`);
+  return;
+}
+
+
+// Handle 1-input case
+if (inputIds.length === 1) {
+  const id = inputIds[0];
+  const full = moduleOutputs[id];
+  const selected = selectedPrimitives[id];
+
+  var genInput = selected
+    ? {
+        ...full,
+        image_schemas: selected.image_schemas?.length ? selected.image_schemas : full.image_schemas,
+        functional_primitives: selected.functional_primitives?.length ? selected.functional_primitives : full.functional_primitives,
+        relations: selected.relations?.length ? selected.relations : full.relations
+      }
+    : full;
+
+  fetch('http://127.0.0.1:5000/remix_from_decomposition', {
+    method: "POST",
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ concept: "Generated", first: genInput })
+  })
+  .then(res => res.json())
+  .then(handleGeneratorResponse);
+}
+
+// Handle 2-input case
+else if (inputIds.length === 2) {
+  const [id1, id2] = inputIds;
+  const full1 = moduleOutputs[id1];
+  const full2 = moduleOutputs[id2];
+  const sel1 = selectedPrimitives[id1];
+  const sel2 = selectedPrimitives[id2];
+
+  const first = sel1
+    ? {
+        ...full1,
+        image_schemas: sel1.image_schemas?.length ? sel1.image_schemas : full1.image_schemas,
+        functional_primitives: sel1.functional_primitives?.length ? sel1.functional_primitives : full1.functional_primitives,
+        relations: sel1.relations?.length ? sel1.relations : full1.relations
+      }
+    : full1;
+
+  const second = sel2
+    ? {
+        ...full2,
+        image_schemas: sel2.image_schemas?.length ? sel2.image_schemas : full2.image_schemas,
+        functional_primitives: sel2.functional_primitives?.length ? sel2.functional_primitives : full2.functional_primitives,
+        relations: sel2.relations?.length ? sel2.relations : full2.relations
+      }
+    : full2;
+
+  fetch('http://127.0.0.1:5000/remix_from_decomposition', {
+    method: "POST",
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      concept: `${label}`,
+      first,
+      second,
+      blend: 50
+    })
+  })
+  .then(res => res.json())
+  .then(handleGeneratorResponse);
+}
+else {
+  alert("Only 1 or 2 decomposition inputs supported.");
+}
+function handleGeneratorResponse(data) {
+  const div = document.createElement("div");
+  div.className = "generator-output";
+  div.style = "margin-top:0.5rem; font-style:italic;";
+  div.textContent = data.metaphor;
+
+  const body = document.querySelector(`.module[data-id="${moduleId}"] .module-body`);
+  const existing = body.querySelector(".generator-output");
+  if (existing) existing.remove();
+  body.appendChild(div);
+
+  moduleOutputs[moduleId] = data;
+  triggerNextModules(moduleId);
+}
+
 
       if (!genInput) return alert(`${label} needs decomposed input`);
 
@@ -844,3 +938,4 @@ function getFilteredOrFull(moduleId) {
 
 
 console.log("JS Loaded"); 
+console.log("Generator inputs:", decompositions);
