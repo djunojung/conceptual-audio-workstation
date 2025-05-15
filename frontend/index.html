@@ -85,10 +85,6 @@
     </div>
   </div>
 
-  <div style="margin-top: 1rem;">
-  <button onclick="addNewModule()">➕ Add New Module</button>
-</div>
-
   <div id="wireLayer"></div>
 
 <button onclick="localStorage.removeItem('cawRack'); location.reload()">🗑️ Clear Rack</button>
@@ -96,6 +92,10 @@
   <button onclick="exportRack()">📤 Export Rack (.cawrack.json)</button>
   <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importRack(event)">
   <button onclick="document.getElementById('importFile').click()">📥 Import Rack</button>
+</div>
+
+  <div style="margin-top: 1rem;">
+  <button onclick="addNewModule()">➕ Add New Module</button>
 </div>
 
   <script src="main.js"></script>

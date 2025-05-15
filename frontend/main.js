@@ -293,30 +293,73 @@ function makeModulesDraggable() {
 
 let moduleCount = 1;
 
-function addNewModule(label = null, top = null, left = null) {
+function addNewModule(label = null, top = null, left = null, type = null) {
   const canvas = document.getElementById("canvas");
   const module = document.createElement("div");
   module.className = "module";
 
   const id = moduleCount++;
   const moduleLabel = label || `Module ${id}`;
+  const moduleType = type || prompt("Choose module type:\nInput, Decomposer, Generator, Mixer, Viewer, Exporter", "Input");
+
   const posTop = top || `${50 + id * 20}px`;
   const posLeft = left || `${50 + id * 20}px`;
 
   module.style.top = posTop;
   module.style.left = posLeft;
   module.setAttribute("data-id", id);
+  module.setAttribute("data-type", moduleType);
+
+  const icon = getTypeIcon(moduleType);
 
   module.innerHTML = `
     <div class="port input"></div>
     <div class="port output"></div>
-    <p>${moduleLabel}</p>
+    <div class="module-header">
+      <span class="type-label">${icon} ${moduleType}</span>
+      <p ondblclick="editLabel(this)">${moduleLabel}</p>
+    </div>
+    <div class="module-body">
+      ${getModuleUI(moduleType)}
+    </div>
   `;
 
   canvas.appendChild(module);
   makeDraggable(module);
+  saveRack();
+}
 
-  saveRack(); // 👈 save layout on every module creation
+// ✅ Define below or above addNewModule
+function getTypeIcon(type) {
+  const icons = {
+    "Input": "🔤",
+    "Decomposer": "🧩",
+    "Generator": "🧠",
+    "Mixer": "🎚️",
+    "Viewer": "👁️",
+    "Exporter": "💾"
+  };
+  return icons[type] || "❓";
+}
+
+
+function getModuleUI(type) {
+  switch (type) {
+    case "Input":
+      return `<input type="text" placeholder="Enter concept">`;
+    case "Decomposer":
+      return `<button onclick="triggerDecomposition(this)">Decompose</button>`;
+    case "Generator":
+      return `<button onclick="triggerGeneration(this)">Generate Metaphor</button>`;
+    case "Mixer":
+      return `<input type="range" min="0" max="100" value="50">`;
+    case "Viewer":
+      return `<div class="viewer-box">No data yet</div>`;
+    case "Exporter":
+      return `<button onclick="exportFromModule(this)">Export</button>`;
+    default:
+      return `<div>Unknown module</div>`;
+  }
 }
 
 // Initialize all systems on page load
@@ -338,7 +381,8 @@ function saveRack() {
       id: module.getAttribute("data-id"),
       label: module.querySelector("p").textContent,
       top: module.style.top,
-      left: module.style.left
+      left: module.style.left,
+      type: module.getAttribute("data-type")
     });
   });
 
@@ -351,7 +395,7 @@ function loadRack() {
 
   const modules = JSON.parse(raw);
   modules.forEach(mod => {
-    addNewModule(mod.label, mod.top, mod.left);
+    addNewModule(mod.label, mod.top, mod.left, mod.type);
   });
 }
 
@@ -390,5 +434,26 @@ function importRack(event) {
   };
   reader.readAsText(file);
 }
+
+function editLabel(pElement) {
+  const newLabel = prompt("Rename module:", pElement.textContent);
+  if (newLabel) {
+    pElement.textContent = newLabel;
+    saveRack();
+  }
+}
+
+function triggerDecomposition(btn) {
+  alert("Decomposition logic will run here.");
+}
+
+function triggerGeneration(btn) {
+  alert("Generation logic will run here.");
+}
+
+function exportFromModule(btn) {
+  alert("Export logic will run here.");
+}
+
 
 console.log("JS Loaded");
