@@ -266,6 +266,23 @@ function makeDraggable(module) {
   let offsetY = 0;
   let isDragging = false;
 
+function updateAllWirePaths() {
+  const canvasRect = document.getElementById("canvas").getBoundingClientRect();
+
+  connections.forEach(conn => {
+    const fromPort = document.querySelector(`.module[data-id="${conn.from}"] .port.output`);
+    const toPort = document.querySelector(`.module[data-id="${conn.to}"] .port.input`);
+    if (!fromPort || !toPort) return;
+
+    const x1 = fromPort.getBoundingClientRect().left - canvasRect.left + 6;
+    const y1 = fromPort.getBoundingClientRect().top - canvasRect.top + 6;
+    const x2 = toPort.getBoundingClientRect().left - canvasRect.left + 6;
+    const y2 = toPort.getBoundingClientRect().top - canvasRect.top + 6;
+
+    conn.path.setAttribute("d", `M${x1},${y1} C${x1+50},${y1} ${x2-50},${y2} ${x2},${y2}`);
+  });
+}
+
   module.addEventListener('mousedown', (e) => {
     if (e.target.classList.contains('port')) return;
     isDragging = true;
@@ -278,15 +295,16 @@ function makeDraggable(module) {
     if (!isDragging) return;
     module.style.left = (e.clientX - offsetX) + 'px';
     module.style.top = (e.clientY - offsetY) + 'px';
+    updateAllWirePaths();  // 👈 add this
   });
 
   document.addEventListener('mouseup', () => {
-  isDragging = false;
-  module.style.zIndex = 1;
-  saveRack(); // 👈 save layout when done dragging
-});
-
+    isDragging = false;
+    module.style.zIndex = 1;
+    saveRack();
+  });
 }
+
 
 function makeModulesDraggable() {
   const modules = document.querySelectorAll('.module');
@@ -302,7 +320,29 @@ function addNewModule(label = null, top = null, left = null, type = null) {
 
   const id = moduleCount++;
   const moduleLabel = label || `Module ${id}`;
-  const moduleType = type || prompt("Choose module type:\nInput, Decomposer, Generator, Mixer, Viewer, Exporter", "Input");
+  const typeOptions = {
+  "1": "Input",
+  "2": "Decomposer",
+  "3": "Generator",
+  "4": "Mixer",
+  "5": "Viewer",
+  "6": "Exporter"
+};
+
+let moduleType = type;
+if (!moduleType) {
+  const choice = prompt(
+    "Choose module type:\n" +
+    "1 = Input\n" +
+    "2 = Decomposer\n" +
+    "3 = Generator\n" +
+    "4 = Mixer\n" +
+    "5 = Viewer\n" +
+    "6 = Exporter", "1"
+  );
+  moduleType = typeOptions[choice] || "Input";
+}
+
 
   const posTop = top || `${50 + id * 20}px`;
   const posLeft = left || `${50 + id * 20}px`;
@@ -665,5 +705,23 @@ function triggerNextModules(fromId) {
     .filter(conn => conn.from === fromId)
     .forEach(conn => triggerModule(conn.to));
 }
+
+document.addEventListener("contextmenu", function (e) {
+  if (e.target.classList.contains("wire")) {
+    e.preventDefault(); // Prevent right-click menu
+
+    const confirmed = confirm("Delete this wire?");
+    if (!confirmed) return;
+
+    // Remove from DOM
+    e.target.remove();
+
+    // Remove from connections array
+    connections = connections.filter(conn => conn.path !== e.target);
+
+    // Save updated layout
+    saveRack();
+  }
+});
 
 console.log("JS Loaded");
