@@ -1,5 +1,7 @@
 let lastDecomposition = null;
 
+const moduleOutputs = {}; // Stores output per module ID
+
 // Generate Metaphor
 async function generateMetaphor() {
   const object1 = document.getElementById('object1').value;
@@ -342,21 +344,26 @@ function getTypeIcon(type) {
   return icons[type] || "❓";
 }
 
+function triggerThis(btn) {
+  const moduleId = btn.closest(".module").getAttribute("data-id");
+  triggerModule(moduleId);
+}
 
 function getModuleUI(type) {
   switch (type) {
     case "Input":
-      return `<input type="text" placeholder="Enter concept">`;
+      return `<input type="text" placeholder="Enter concept">
+              <button onclick="triggerThis(this)">Send</button>`;
     case "Decomposer":
-      return `<button onclick="triggerDecomposition(this)">Decompose</button>`;
+      return `<button onclick="triggerThis(this)">Decompose</button>`;
     case "Generator":
-      return `<button onclick="triggerGeneration(this)">Generate Metaphor</button>`;
+      return `<button onclick="triggerThis(this)">Generate Metaphor</button>`;
     case "Mixer":
       return `<input type="range" min="0" max="100" value="50">`;
     case "Viewer":
       return `<div class="viewer-box">No data yet</div>`;
     case "Exporter":
-      return `<button onclick="exportFromModule(this)">Export</button>`;
+      return `<button onclick="triggerThis(this)">Export</button>`;
     default:
       return `<div>Unknown module</div>`;
   }
@@ -387,18 +394,44 @@ function saveRack() {
     });
   });
 
-  localStorage.setItem("cawRack", JSON.stringify(layout));
+  const savedConnections = connections.map(conn => ({
+    from: conn.from,
+    to: conn.to
+  }));
+
+  const fullSave = {
+    modules: layout,
+    connections: savedConnections
+  };
+
+  localStorage.setItem("cawRack", JSON.stringify(fullSave));
 }
 
 function loadRack() {
   const raw = localStorage.getItem("cawRack");
   if (!raw) return;
 
-  const modules = JSON.parse(raw);
-  modules.forEach(mod => {
-    addNewModule(mod.label, mod.top, mod.left, mod.type);
-  });
+  const parsed = JSON.parse(raw);
+
+  if (Array.isArray(parsed)) {
+    // Backward compatibility (module array only)
+    parsed.forEach(mod => {
+      addNewModule(mod.label, mod.top, mod.left, mod.type);
+    });
+  } else {
+    parsed.modules.forEach(mod => {
+      addNewModule(mod.label, mod.top, mod.left, mod.type);
+    });
+
+    // Delay wiring until DOM is updated
+    setTimeout(() => {
+      parsed.connections.forEach(conn => {
+        drawWireById(conn.from, conn.to);
+      });
+    }, 100);
+  }
 }
+
 
 function exportRack() {
   const raw = localStorage.getItem("cawRack");
@@ -461,6 +494,80 @@ let isDraggingWire = false;
 let tempWire = null;
 let sourcePort = null;
 
+function triggerModule(moduleId) {
+  const module = document.querySelector(`.module[data-id="${moduleId}"]`);
+  if (!module) return;
+
+  const type = module.getAttribute("data-type");
+  const label = module.querySelector("p").textContent;
+
+  switch (type) {
+    case "Input":
+      const inputVal = module.querySelector("input").value;
+      moduleOutputs[moduleId] = inputVal;
+      break;
+
+    case "Decomposer":
+      const concept = getInputFromConnected(moduleId);
+      if (!concept) return alert(`${label} has no input`);
+      module.querySelector("button").textContent = "Working...";
+      fetch('http://127.0.0.1:5000/decompose_concept', {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ concept })
+      })
+      .then(res => res.json())
+      .then(data => {
+        moduleOutputs[moduleId] = data;
+        module.querySelector("button").textContent = "Decompose";
+        triggerNextModules(moduleId);
+      });
+      return;
+
+    case "Generator":
+      const genConcept = getInputFromConnected(moduleId);
+      if (!genConcept) return alert(`${label} needs decomposed input`);
+      module.querySelector("button").textContent = "Generating...";
+      fetch('http://127.0.0.1:5000/remix_from_decomposition', {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ concept: "Generated", first: genConcept })
+      })
+      .then(res => res.json())
+      .then(data => {
+        module.querySelector("button").textContent = "Generate Metaphor";
+        module.querySelector("button").insertAdjacentHTML("afterend", `<div style="margin-top:0.5rem; font-style:italic;">${data.metaphor}</div>`);
+        moduleOutputs[moduleId] = data;
+        triggerNextModules(moduleId);
+      });
+      return;
+
+    case "Viewer":
+      const incoming = getInputFromConnected(moduleId);
+      const box = module.querySelector(".viewer-box");
+      box.textContent = incoming ? JSON.stringify(incoming, null, 2) : "No data";
+      moduleOutputs[moduleId] = incoming;
+      break;
+
+    case "Exporter":
+      const exportData = getInputFromConnected(moduleId);
+      if (!exportData) return alert(`${label} has no data`);
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${label.replace(/\s+/g, "_")}.json`;
+      a.click();
+      break;
+
+    default:
+      console.log(`Unhandled module type: ${type}`);
+  }
+
+  // Pass to next modules
+  triggerNextModules(moduleId);
+}
+
 function setupWiring() {
   const canvas = document.getElementById("canvas");
   const wireLayer = document.getElementById("wireLayer");
@@ -504,7 +611,6 @@ function setupWiring() {
 
       tempWire.setAttribute("d", `M${x1},${y1} C${x1+50},${y1} ${x2-50},${y2} ${x2},${y2}`);
 
-      // Save the connection
       connections.push({
         from: sourcePort.parentElement.getAttribute("data-id"),
         to: targetPort.parentElement.getAttribute("data-id"),
@@ -522,5 +628,42 @@ function setupWiring() {
   });
 }
 
+function drawWireById(fromId, toId) {
+  const fromModule = document.querySelector(`.module[data-id="${fromId}"] .port.output`);
+  const toModule = document.querySelector(`.module[data-id="${toId}"] .port.input`);
+
+  if (!fromModule || !toModule) return;
+
+  const canvas = document.getElementById("canvas");
+  const canvasRect = canvas.getBoundingClientRect();
+  const wireLayer = document.getElementById("wireLayer");
+
+  const x1 = fromModule.getBoundingClientRect().left - canvasRect.left + 6;
+  const y1 = fromModule.getBoundingClientRect().top - canvasRect.top + 6;
+  const x2 = toModule.getBoundingClientRect().left - canvasRect.left + 6;
+  const y2 = toModule.getBoundingClientRect().top - canvasRect.top + 6;
+
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("class", "wire");
+  path.setAttribute("d", `M${x1},${y1} C${x1+50},${y1} ${x2-50},${y2} ${x2},${y2}`);
+  wireLayer.appendChild(path);
+
+  connections.push({
+    from: fromId,
+    to: toId,
+    path
+  });
+}
+
+function getInputFromConnected(moduleId) {
+  const conn = connections.find(c => c.to === moduleId);
+  return conn ? moduleOutputs[conn.from] : null;
+}
+
+function triggerNextModules(fromId) {
+  connections
+    .filter(conn => conn.from === fromId)
+    .forEach(conn => triggerModule(conn.to));
+}
 
 console.log("JS Loaded");
