@@ -1,12 +1,11 @@
 /* General Layout */
 body {
-  font-family: 'Segoe UI', sans-serif;
-  background: #1a1a1a;
-  color: #f0f0f0;
-  padding: 2rem;
-  text-align: center;
-  max-width: 800px;
-  margin: auto;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  background: #111;
+  color: #eee;
+  font-family: sans-serif;
 }
 
 h1 {
@@ -170,13 +169,10 @@ button:hover {
 /* Canvas for Modules */
 #canvas {
   position: relative;
-  width: 100%;
-  height: 600px;
-  background: #111;
-  border: 2px solid #333;
-  margin-top: 2rem;
-  overflow: hidden;
-  border-radius: 8px;
+  width: 100vw;
+  height: 100vh;
+  padding: 0;
+  margin: 0;
 }
 
 /* Draggable Module */

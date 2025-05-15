@@ -833,4 +833,14 @@ document.addEventListener("contextmenu", function (e) {
   }
 });
 
+function getFilteredOrFull(moduleId) {
+  const selected = selectedPrimitives[moduleId];
+  if (!selected) return moduleOutputs[moduleId];  // fall back
+
+  // Only use if at least one field has non-empty selection
+  const hasSelection = Object.values(selected).some(arr => arr && arr.length);
+  return hasSelection ? selected : moduleOutputs[moduleId];
+}
+
+
 console.log("JS Loaded"); 
