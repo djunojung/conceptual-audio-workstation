@@ -542,59 +542,96 @@ function triggerModule(moduleId) {
   const label = module.querySelector("p").textContent;
 
   switch (type) {
-    case "Input":
-  const inputVal = module.querySelector("input").value;
-  moduleOutputs[moduleId] = inputVal;
-  triggerNextModules(moduleId); // 🔁 trigger connected modules
-  break;
+    case "Input": {
+      const inputVal = module.querySelector("input").value;
+      moduleOutputs[moduleId] = inputVal;
+      triggerNextModules(moduleId);
+      break;
+    }
 
-    case "Decomposer":
-  const concept = getInputFromConnected(moduleId);
-  if (!concept) return alert(`${label} has no input`);
+    case "Decomposer": {
+      const concept = getInputFromConnected(moduleId);
+      if (!concept) return alert(`${label} has no input`);
 
-  module.querySelector("button").textContent = "Working...";
-  fetch('http://127.0.0.1:5000/decompose_concept', {
-    method: "POST",
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ concept })
-  })
-  .then(res => res.json())
-  .then(data => {
-    moduleOutputs[moduleId] = JSON.parse(data.decomposition); // 🎯 don't forget to parse it
-    module.querySelector("button").textContent = "Decompose";
-    triggerNextModules(moduleId); // 🔁 continue the flow
-  });
-  return;
+      module.querySelector("button").textContent = "Working...";
+      fetch('http://127.0.0.1:5000/decompose_concept', {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ concept })
+      })
+      .then(res => res.json())
+      .then(data => {
+        const parsed = JSON.parse(data.decomposition);
+        moduleOutputs[moduleId] = parsed;
+        module.querySelector("button").textContent = "Decompose";
 
+        // 🧩 Render output
+        const body = module.querySelector(".module-body");
+        const existing = module.querySelector(".decomp-output");
+        if (existing) existing.remove();
 
-    case "Generator":
-  const genInput = getInputFromConnected(moduleId);
-  if (!genInput) return alert(`${label} needs decomposed input`);
+        const div = document.createElement("div");
+        div.className = "decomp-output";
+        div.style = "margin-top: 0.5rem; text-align: left; font-size: 0.85rem; white-space: pre-wrap; color: #ccc;";
+        div.innerHTML = `
+          <strong>Image Schemas:</strong> ${parsed.image_schemas.join(', ')}<br>
+          <strong>Functions:</strong> ${parsed.functional_primitives.join(', ')}<br>
+          <strong>Archetype:</strong> ${parsed.archetype}<br>
+          <strong>Emotion:</strong> ${parsed.emotion}<br>
+          <strong>Frames:</strong><br>
+          &nbsp;&nbsp;Nature: ${parsed.frames.nature}<br>
+          &nbsp;&nbsp;Technology: ${parsed.frames.technology}<br>
+          &nbsp;&nbsp;Myth: ${parsed.frames.myth}<br>
+          &nbsp;&nbsp;Design: ${parsed.frames.design}<br>
+          <strong>Relations:</strong> ${parsed.relations.join(', ')}
+        `;
+        body.appendChild(div);
 
-  module.querySelector("button").textContent = "Generating...";
-  fetch('http://127.0.0.1:5000/remix_from_decomposition', {
-    method: "POST",
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ concept: "Generated", first: genInput })
-  })
-  .then(res => res.json())
-  .then(data => {
-    module.querySelector("button").textContent = "Generate Metaphor";
-    module.querySelector("button").insertAdjacentHTML("afterend", `<div style="margin-top:0.5rem; font-style:italic;">${data.metaphor}</div>`);
-    moduleOutputs[moduleId] = data;
-    triggerNextModules(moduleId); // 🔁 continue the flow
-  });
-  return;
+        triggerNextModules(moduleId);
+      });
+      break;
+    }
 
+    case "Generator": {
+      const genInput = getInputFromConnected(moduleId);
+      if (!genInput) return alert(`${label} needs decomposed input`);
 
-    case "Viewer":
+      module.querySelector("button").textContent = "Generating...";
+
+      // 🔁 Clear existing result before appending new
+      const existing = module.querySelector(".generator-output");
+      if (existing) existing.remove();
+
+      fetch('http://127.0.0.1:5000/remix_from_decomposition', {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ concept: "Generated", first: genInput })
+      })
+      .then(res => res.json())
+      .then(data => {
+        module.querySelector("button").textContent = "Generate Metaphor";
+
+        const div = document.createElement("div");
+        div.className = "generator-output";
+        div.style = "margin-top:0.5rem; font-style:italic;";
+        div.textContent = data.metaphor;
+        module.querySelector(".module-body").appendChild(div);
+
+        moduleOutputs[moduleId] = data;
+        triggerNextModules(moduleId);
+      });
+      break;
+    }
+
+    case "Viewer": {
       const incoming = getInputFromConnected(moduleId);
       const box = module.querySelector(".viewer-box");
       box.textContent = incoming ? JSON.stringify(incoming, null, 2) : "No data";
       moduleOutputs[moduleId] = incoming;
       break;
+    }
 
-    case "Exporter":
+    case "Exporter": {
       const exportData = getInputFromConnected(moduleId);
       if (!exportData) return alert(`${label} has no data`);
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
@@ -604,14 +641,18 @@ function triggerModule(moduleId) {
       a.download = `${label.replace(/\s+/g, "_")}.json`;
       a.click();
       break;
+    }
 
     default:
       console.log(`Unhandled module type: ${type}`);
   }
 
-  // Pass to next modules
-  triggerNextModules(moduleId);
+  // Final fallback — in case module completes without breaking
+  if (!["Decomposer", "Generator"].includes(type)) {
+    triggerNextModules(moduleId);
+  }
 }
+
 
 function setupWiring() {
   const canvas = document.getElementById("canvas");
