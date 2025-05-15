@@ -77,15 +77,23 @@
 
   <!-- Canvas for Modules -->
   <div id="canvas">
-    <!-- Example draggable module -->
-    <div class="module" style="top: 50px; left: 50px;">
-      <div class="port input"></div>
-      <div class="port output"></div>
-      <p>Metaphor Module</p>
+  <!-- Example module (optional) -->
+  <div class="module" style="top: 50px; left: 50px;" data-id="0" data-type="Input">
+    <div class="port input"></div>
+    <div class="port output"></div>
+    <div class="module-header">
+      <span class="type-label">🔤 Input</span>
+      <p ondblclick="editLabel(this)">Module 0</p>
+    </div>
+    <div class="module-body">
+      <input type="text" placeholder="Enter concept">
     </div>
   </div>
 
-  <div id="wireLayer"></div>
+  <!-- SVG wire layer -->
+  <svg id="wireLayer"></svg>
+</div>
+
 
 <button onclick="localStorage.removeItem('cawRack'); location.reload()">🗑️ Clear Rack</button>
 <div style="margin-top: 1rem;">

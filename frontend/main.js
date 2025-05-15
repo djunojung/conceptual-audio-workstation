@@ -369,6 +369,7 @@ window.onload = () => {
   updateBlendLabel();
   makeModulesDraggable(); // initial ones
   loadRack(); // 🔁 load saved modules
+  setupWiring();
 };
 
 
@@ -453,6 +454,72 @@ function triggerGeneration(btn) {
 
 function exportFromModule(btn) {
   alert("Export logic will run here.");
+}
+
+let connections = [];
+let isDraggingWire = false;
+let tempWire = null;
+let sourcePort = null;
+
+function setupWiring() {
+  const canvas = document.getElementById("canvas");
+  const wireLayer = document.getElementById("wireLayer");
+
+  canvas.addEventListener("mousedown", (e) => {
+    if (!e.target.classList.contains("port") || !e.target.classList.contains("output")) return;
+
+    isDraggingWire = true;
+    sourcePort = e.target;
+
+    tempWire = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    tempWire.setAttribute("class", "wire");
+    wireLayer.appendChild(tempWire);
+  });
+
+  canvas.addEventListener("mousemove", (e) => {
+    if (!isDraggingWire || !tempWire || !sourcePort) return;
+
+    const canvasRect = canvas.getBoundingClientRect();
+    const x1 = sourcePort.getBoundingClientRect().left - canvasRect.left + 6;
+    const y1 = sourcePort.getBoundingClientRect().top - canvasRect.top + 6;
+    const x2 = e.clientX - canvasRect.left;
+    const y2 = e.clientY - canvasRect.top;
+
+    tempWire.setAttribute("d", `M${x1},${y1} C${x1+50},${y1} ${x2-50},${y2} ${x2},${y2}`);
+  });
+
+  canvas.addEventListener("mouseup", (e) => {
+    if (!isDraggingWire || !sourcePort || !tempWire) return;
+
+    isDraggingWire = false;
+
+    if (e.target.classList.contains("port") && e.target.classList.contains("input")) {
+      const targetPort = e.target;
+
+      const canvasRect = canvas.getBoundingClientRect();
+      const x1 = sourcePort.getBoundingClientRect().left - canvasRect.left + 6;
+      const y1 = sourcePort.getBoundingClientRect().top - canvasRect.top + 6;
+      const x2 = targetPort.getBoundingClientRect().left - canvasRect.left + 6;
+      const y2 = targetPort.getBoundingClientRect().top - canvasRect.top + 6;
+
+      tempWire.setAttribute("d", `M${x1},${y1} C${x1+50},${y1} ${x2-50},${y2} ${x2},${y2}`);
+
+      // Save the connection
+      connections.push({
+        from: sourcePort.parentElement.getAttribute("data-id"),
+        to: targetPort.parentElement.getAttribute("data-id"),
+        path: tempWire
+      });
+
+      tempWire = null;
+      sourcePort = null;
+    } else {
+      // Not dropped on valid input — cancel wire
+      wireLayer.removeChild(tempWire);
+      tempWire = null;
+      sourcePort = null;
+    }
+  });
 }
 
 
