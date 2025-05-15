@@ -1,7 +1,7 @@
 let lastDecomposition = null;
 
 const moduleOutputs = {}; // Stores output per module ID
-
+const selectedPrimitives = {};  // Tracks user-selected primitives per module
 // Generate Metaphor
 async function generateMetaphor() {
   const object1 = document.getElementById('object1').value;
@@ -101,6 +101,13 @@ function renderDecomposition(data) {
       </div>
     </div>
   `;
+}
+
+function renderTagList(items, category, moduleId) {
+  return items.map(item => {
+    const key = `${moduleId}-${category}-${item}`;
+    return `<span class="tag selectable" data-key="${key}" data-cat="${category}" data-id="${moduleId}">${item}</span>`;
+  }).join('');
 }
 
 // Remix From Single Decomposition
@@ -421,6 +428,34 @@ window.onload = () => {
     createDefaultModules();
   }
 
+document.addEventListener("click", function(e) {
+  if (!e.target.classList.contains("selectable")) return;
+
+  const key = e.target.getAttribute("data-key");
+  const cat = e.target.getAttribute("data-cat");
+  const modId = e.target.getAttribute("data-id");
+
+  e.target.classList.toggle("selected");
+
+  if (!selectedPrimitives[modId]) {
+    selectedPrimitives[modId] = {
+      image_schemas: [],
+      functional_primitives: [],
+      relations: []
+    };
+  }
+
+  const item = key.split(`${modId}-${cat}-`)[1];
+  const list = selectedPrimitives[modId][cat];
+  const index = list.indexOf(item);
+
+  if (index === -1) {
+    list.push(item);
+  } else {
+    list.splice(index, 1);
+  }
+});
+
   setupWiring(); // Enable wire drawing
 };
 function createDefaultModules() {
@@ -549,6 +584,11 @@ let isDraggingWire = false;
 let tempWire = null;
 let sourcePort = null;
 
+function getConnectionFrom(toId) {
+  const conn = connections.find(c => c.to === toId);
+  return conn ? conn.from : null;
+}
+
 function triggerModule(moduleId) {
   const module = document.querySelector(`.module[data-id="${moduleId}"]`);
   if (!module) return;
@@ -564,7 +604,7 @@ function triggerModule(moduleId) {
       break;
     }
 
-    case "Decomposer": {
+     case "Decomposer": {
       const concept = getInputFromConnected(moduleId);
       if (!concept) return alert(`${label} has no input`);
 
@@ -589,17 +629,21 @@ function triggerModule(moduleId) {
         div.className = "decomp-output";
         div.style = "margin-top: 0.5rem; text-align: left; font-size: 0.85rem; white-space: pre-wrap; color: #ccc;";
         div.innerHTML = `
-          <strong>Image Schemas:</strong> ${parsed.image_schemas.join(', ')}<br>
-          <strong>Functions:</strong> ${parsed.functional_primitives.join(', ')}<br>
-          <strong>Archetype:</strong> ${parsed.archetype}<br>
-          <strong>Emotion:</strong> ${parsed.emotion}<br>
-          <strong>Frames:</strong><br>
-          &nbsp;&nbsp;Nature: ${parsed.frames.nature}<br>
-          &nbsp;&nbsp;Technology: ${parsed.frames.technology}<br>
-          &nbsp;&nbsp;Myth: ${parsed.frames.myth}<br>
-          &nbsp;&nbsp;Design: ${parsed.frames.design}<br>
-          <strong>Relations:</strong> ${parsed.relations.join(', ')}
-        `;
+  <strong>Image Schemas:</strong>
+  <div class="tag-container">${renderTagList(parsed.image_schemas, "image_schemas", moduleId)}</div>
+  <strong>Functions:</strong>
+  <div class="tag-container">${renderTagList(parsed.functional_primitives, "functional_primitives", moduleId)}</div>
+  <strong>Archetype:</strong> ${parsed.archetype}<br>
+  <strong>Emotion:</strong> ${parsed.emotion}<br>
+  <strong>Frames:</strong><br>
+    &nbsp;&nbsp;Nature: ${parsed.frames.nature}<br>
+    &nbsp;&nbsp;Technology: ${parsed.frames.technology}<br>
+    &nbsp;&nbsp;Myth: ${parsed.frames.myth}<br>
+    &nbsp;&nbsp;Design: ${parsed.frames.design}<br>
+  <strong>Relations:</strong>
+  <div class="tag-container">${renderTagList(parsed.relations, "relations", moduleId)}</div>
+`;
+
         body.appendChild(div);
 
         triggerNextModules(moduleId);
@@ -608,7 +652,11 @@ function triggerModule(moduleId) {
     }
 
     case "Generator": {
-      const genInput = getInputFromConnected(moduleId);
+  const inputId = getConnectionFrom(moduleId);
+  const selected = selectedPrimitives[inputId];
+
+  const genInput = selected || getInputFromConnected(moduleId);
+
       if (!genInput) return alert(`${label} needs decomposed input`);
 
       module.querySelector("button").textContent = "Generating...";

@@ -301,3 +301,18 @@ input:focus, button:focus {
   border-radius: 6px;
   margin-top: 0.5rem;
 }
+.selectable {
+  cursor: pointer;
+  padding: 0.25em 0.5em;
+  margin: 0.25em;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  display: inline-block;
+  background: #222;
+  color: #eee;
+}
+
+.selectable.selected {
+  background: #4caf50;
+  color: white;
+}
